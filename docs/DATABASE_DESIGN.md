@@ -2,7 +2,7 @@
 
 Fecha: 6 de septiembre de 2026. Estado: diseño propuesto, pendiente de implementación en Drizzle.
 
-Base: [plan del MVP v1.1](plan-mvp.md). El documento maestro citado por el plan no está en este repositorio; este diseño todavía no se ha contrastado con él. Las decisiones cerradas del plan se mantienen. Las reglas de producto adicionales se identifican como propuestas.
+Base: [plan del MVP v1.2](MVP_PLAN.md). El documento maestro citado por el plan no está en este repositorio; este diseño todavía no se ha contrastado con él. Las decisiones cerradas del plan se mantienen. Las reglas de producto adicionales se identifican como propuestas.
 
 ## 1. Alcance y decisiones
 
@@ -10,9 +10,9 @@ PostgreSQL con pgvector; una base compartida y un solo nivel de tenant: `organiz
 
 Se diseña el MVP completo, pero las tablas se crean por fases. La primera implementación cubre identidad, canales, contactos, conversaciones, mensajes y eventos. Conocimiento e IA se incorporan en la fase 3.
 
-No se incluyen campañas, billing, equipos dentro de un workspace, múltiples agentes ni un constructor de flujos. No se elige todavía proveedor de IA ni dimensión de embeddings.
+No se incluyen campañas, billing, equipos dentro de un workspace, múltiples agentes ni un constructor de flujos. El ADR 0002 propone OpenAI y 1024 dimensiones; falta confirmarlos antes de crear `knowledge_chunks`.
 
-Decisiones relacionadas: [ADR 001 — Workspace](adr/001-organization-es-workspace.md) y [ADR 002 — Proveedores de IA pendientes](adr/002-proveedores-ia-y-embeddings.md).
+Decisiones relacionadas: [ADR 0001 — Workspace](adr/0001_ORGANIZATION_IS_WORKSPACE.md) y [ADR 0002 — Proveedores de IA pendientes](adr/0002_AI_AND_EMBEDDING_PROVIDERS.md).
 
 ## 2. Convenciones e integridad
 
@@ -97,7 +97,7 @@ Mapeo de roles propuesto: `owner` → Owner, `admin` → Admin, `member` → Age
 
 Owner/Admin administran configuración, conocimiento, agente y equipo. Agente puede atender el Inbox y consultar contactos; no administra equipo ni accede a facturación. Billing sigue fuera del MVP. La eliminación/degradación del último Owner se impide con operación serializada por workspace, incluyendo las rutas de Better Auth.
 
-`UTC` es un fallback técnico; antes de habilitar reglas de horario y KPIs se configura la zona real del negocio. No se infiere el país del piloto desde el entorno del desarrollador.
+`UTC` es un fallback técnico del esquema, no una elección de producto. El plan exige una zona IANA explícita al crear el workspace; no habilitar horarios ni KPIs sin ella. No se infiere el país del piloto desde el entorno del desarrollador.
 
 ## 5. Canales y contactos — fases 1–2
 
@@ -263,7 +263,7 @@ FAQs también generan chunks: no tienen un retrieval separado. Un draft no es re
 
 ### Vectores sin cerrar D-2 prematuramente
 
-La migración base habilita `vector`; `knowledge_chunks` se crea solo tras confirmar `N`, proveedor/modelo exacto y estrategia de distancia en el ADR 002. El plan v1.2 propone por defecto OpenAI `text-embedding-3-small` con `N = 1024` y coseno, pendiente de veto del founder antes de la fase 3. Cada chunk conserva `embedding_model` (identificador con proveedor) y `dimensions`; CHECK `dimensions = N` y `vector_dims(embedding) = dimensions`. FK adicional a revisión que incluya modelo/dimensión, con UNIQUE equivalente en el padre, para evitar metadatos incompatibles.
+La migración base habilita `vector`; `knowledge_chunks` se crea solo tras confirmar `N`, proveedor/modelo exacto y estrategia de distancia en el ADR 0002. El plan v1.2 propone por defecto OpenAI `text-embedding-3-small` con `N = 1024` y coseno, pendiente de veto del founder antes de la fase 3. Cada chunk conserva `embedding_model` (identificador con proveedor) y `dimensions`; CHECK `dimensions = N` y `vector_dims(embedding) = dimensions`. FK adicional a revisión que incluya modelo/dimensión, con UNIQUE equivalente en el padre, para evitar metadatos incompatibles.
 
 Propuesta inicial: distancia coseno, búsqueda exacta sobre los chunks publicados y autorizados del tenant; medir antes de añadir HNSW. Si se usa HNSW, `vector_cosine_ops`, con filtros de tenant/fuentes y pruebas de recall. pgvector documenta que los filtros pueden reducir resultados en índices aproximados y ofrece escaneos iterativos. El límite de HNSW para `vector` es 2.000 dimensiones; ≤1.536 en el plan es una preferencia, no ese límite técnico. [pgvector: índices y filtrado](https://github.com/pgvector/pgvector).
 
@@ -329,7 +329,7 @@ El cálculo no usa `conversations.status` como historia: esa columna es una proy
 
 | Orden lógico | Contenido | Dependencia |
 |---|---|---|
-| 0000 | `CREATE EXTENSION IF NOT EXISTS vector`; auth generado y configuración del workspace. | Scaffold, versión de Better Auth fijada y ADR 001. ADR 002 documenta diferimiento. |
+| 0000 | `CREATE EXTENSION IF NOT EXISTS vector`; auth generado y configuración del workspace. | Scaffold, versión de Better Auth fijada y ADR 0001. ADR 0002 documenta diferimiento. |
 | 0001 | Canales, contactos/identidades, conversaciones, mensajes, recepción durable, outbox, eventos de dominio y auditoría. | Convenciones y contratos de mensajes/eventos. |
 | 0002 | Configuración webchat, archivos y adjuntos. | Widget/Inbox, R2. |
 | 0003 | Fuentes, revisiones, chunks e índices vectoriales si corresponden. | **D-2 confirmado** (default: `text-embedding-3-small`, N = 1024, coseno; veto antes de fase 3). |
@@ -358,4 +358,4 @@ Pruebas de integración requeridas al implementar, sobre Postgres real con pgvec
 - Modelo/dimensión incorrectos rechazados; resultados de retrieval comprobados con filtros de tenant y corpus realista.
 - Fixtures de eventos para los seis KPIs: día local, conversación sin respuesta, nota interna, doble callback, handoff repetido y envío humano confirmado tarde.
 
-Las decisiones nuevas a revisar con producto son: no reabrir conversaciones resueltas, `pending` como atención humana, un run automático por entrada, fuentes publicadas vigentes al ejecutar y las definiciones temporales de KPIs. Ninguna bloquea redactar el modelo; deben mantenerse explícitas al implementar.
+Las [preguntas abiertas](OPEN_QUESTIONS.md) registran las decisiones nuevas a revisar con producto: no reabrir conversaciones resueltas, `pending` como atención humana, un run automático por entrada, fuentes publicadas vigentes al ejecutar y las definiciones temporales de KPIs. Ninguna bloquea redactar el modelo; deben mantenerse explícitas al implementar.

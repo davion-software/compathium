@@ -1,4 +1,4 @@
-# ADR 001 — Organization de Better Auth representa un workspace
+# ADR 0001 — Organization de Better Auth representa un workspace
 
 Fecha: 6 de septiembre de 2026. Estado: aceptado por decisión cerrada del plan del MVP.
 
@@ -21,4 +21,4 @@ No hay jerarquía de organizaciones, equipos internos ni rol Supervisor en el co
 
 Las pruebas de aislamiento deben cubrir HTTP, worker, SSE, archivos y búsqueda semántica. Las FK no sustituyen los filtros de lectura ni RBAC.
 
-Detalle: [diseño de base de datos](../diseno-base-de-datos.md).
+Detalle: [diseño de base de datos](../DATABASE_DESIGN.md).
