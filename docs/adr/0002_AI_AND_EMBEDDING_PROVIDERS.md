@@ -1,10 +1,10 @@
-# ADR 002 — Proveedores de chat y embeddings
+# ADR 0002 — Proveedores de chat y embeddings
 
 Fecha: 6 de septiembre de 2026. Estado: **propuesto por defecto**, pendiente de confirmación o veto del founder antes de la fase 3 (D-1, D-2).
 
 ## Contexto
 
-El gateway de IA separa `ChatProvider` y `EmbeddingProvider`. El chat se cambia por adapter sin costo; el embedding no: los vectores quedan atados a modelo y dimensión, y cambiarlo obliga a reindexar todo el conocimiento de todos los tenants. Por eso el chat puede decidirse tarde y el embedding debe estar confirmado antes de la migración 0003 (`knowledge_chunks`).
+El gateway de IA separa `ChatProvider` y `EmbeddingProvider`. El chat puede cambiarse por adapter, con validación de contratos, calidad y costos; el embedding no: los vectores quedan atados a modelo y dimensión, y cambiarlo obliga a reindexar todo el conocimiento de todos los tenants. Por eso el chat puede decidirse tarde y el embedding debe estar confirmado antes de la migración 0003 (`knowledge_chunks`).
 
 El maestro (17.1) lista OpenAI / Anthropic / Gemini / Bedrock como opciones. xAI queda fuera salvo razón explícita.
 
@@ -49,4 +49,4 @@ Si alguna falla, se reabre D-1/D-2 antes de indexar corpus de clientes.
 
 - La migración 0003 se genera con `vector(1024)` y CHECK `dimensions = 1024`.
 - El worker rechaza embeddings cuyo `embedding_model` no coincida con el corpus activo del tenant.
-- Búsqueda exacta al inicio; HNSW solo tras medir volumen y recall (ver [diseño de base de datos](../diseno-base-de-datos.md)).
+- Búsqueda exacta al inicio; HNSW solo tras medir volumen y recall (ver [diseño de base de datos](../DATABASE_DESIGN.md)).

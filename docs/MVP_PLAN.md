@@ -1,11 +1,13 @@
-# Compathium — Plan de arranque del MVP (corregido)
+# Compathium — Plan de arranque del MVP
 
 Versión 1.2 — 6 de septiembre de 2026
 Fuente de verdad de producto: `Compathium_Documento_Maestro_Diseno_MVP.docx` (v1.0). Este plan lo baja a un orden de construcción. Donde este plan y el maestro difieran, gana el maestro salvo en los puntos marcados como decisión cerrada.
 
+Estado del repositorio al 28 de octubre de 2026: solo documentación. Las fases, servicios y scripts siguientes describen trabajo pendiente. Consulta [producto](PRODUCT.md), [diseño técnico](TECHNICAL_DESIGN.md) y [preguntas abiertas](OPEN_QUESTIONS.md).
+
 Las marcas `[D-n]` referencian el registro de decisiones al final. Las cerradas por criterio técnico llevan default; las que dependen del founder están marcadas como pendientes.
 
-Diseño derivado: [base de datos del MVP](diseno-base-de-datos.md), con relaciones, restricciones, índices y orden de migraciones. ADRs: [organization = workspace](adr/001-organization-es-workspace.md) (aceptado) y [proveedores de chat y embeddings](adr/002-proveedores-ia-y-embeddings.md) (default propuesto, pendiente de veto).
+Diseño derivado: [base de datos del MVP](DATABASE_DESIGN.md), con relaciones, restricciones, índices y orden de migraciones. ADRs: [organization = workspace](adr/0001_ORGANIZATION_IS_WORKSPACE.md) (aceptado) y [proveedores de chat y embeddings](adr/0002_AI_AND_EMBEDDING_PROVIDERS.md) (default propuesto, pendiente de veto).
 
 ---
 
@@ -20,14 +22,14 @@ Empieza por el núcleo que se puede vender, no por la plataforma. No uses el sta
 | App | TanStack Start + React 19 + TypeScript | Ya en RutaSec y Davos Links. El maestro lo eligió (13.1). Server functions tipadas, SSR, server routes para webhooks. |
 | UI | Tailwind v4 + Base UI (`@base-ui/react`) `[D-4]` | Es lo que usa Davos Links, el proyecto más reciente; RutaSec quedó en Radix. Tokens del maestro (`#6558F5`, `#F7F8FC`, `#DDE3EE`). |
 | Auth | Better Auth + plugin `organization` | Sesiones, invitaciones, roles. **Decisión cerrada:** `organization` de Better Auth = workspace. No se modela el segundo nivel `organizations → workspaces` del maestro en el MVP. En UI se llama "workspace"; en código, `organization`. |
-| Host | Railway: `web` + `worker` + `pgvector` + `redis` | Mismo ADR 001 de Kaseis. Un solo modelo mental de deploy. |
+| Host | Railway: `web` + `worker` + `pgvector` + `redis` | Mismo ADR 0001 de Kaseis. Un solo modelo mental de deploy. |
 | DB | Postgres (template **pgvector**) + Drizzle | El template Postgres estándar de Railway **no** trae pgvector y no se puede añadir después sin `pg_dump`/`pg_restore`. Desplegar `pgvector/pgvector:pg18` desde el día 1. Primera migración: `CREATE EXTENSION IF NOT EXISTS vector`. |
-| Cola | Redis + BullMQ `[D-5]` | Webhooks, ingestión de docs, runs de IA, envíos. Ack rápido, proceso después. Redis también da el pub/sub para SSE multi-réplica. |
+| Cola | Redis + BullMQ `[D-5]` | Webhooks, ingestión de docs, runs de IA, envíos. ACK tras persistencia durable; proceso después. Redis también da el pub/sub para SSE multi-réplica. |
 | Realtime | SSE primero | Suficiente con 1 réplica de `web`. Con más réplicas, fan-out por Redis pub/sub. WebSocket solo cuando SSE se quede corto. |
 | Archivos | Cloudflare R2 | Adjuntos y PDFs. URLs firmadas, bucket privado. |
 | WhatsApp | Kapso `[D-6]` **pendiente de confirmar** | Kaseis solo tiene runbook y reglas sobre Kapso; no hay código. Primera implementación real. El `ChannelAdapter` se diseña para que Cloud API directo sea un adapter alternativo. |
 | IA — chat | Gateway propio, `ChatProvider` → OpenAI por defecto `[D-1]` | Modelo económico vigente de la familia con structured outputs y tool calling; id en `AI_CHAT_MODEL`. Un solo vendor para chat y embeddings simplifica facturación y claves en el piloto. |
-| IA — embeddings | `EmbeddingProvider` → OpenAI `text-embedding-3-small`, 1024 dims `[D-2]` | $0.02/M tokens, multilingüe, dimensión ajustable (256–1536). 1024 mantiene índices HNSW cómodos. **Pegajosa:** cambiar modelo o dimensión = reindexar todo. Cada chunk guarda `embedding_model` y `dimensions`. |
+| IA — embeddings | `EmbeddingProvider` → OpenAI `text-embedding-3-small`, 1024 dims `[D-2]` | $0.02/M tokens, multilingüe, dimensión ajustable (256–1536). 1024 es la dimensión propuesta. Búsqueda exacta al inicio; HNSW solo después de medir volumen y calidad. **Pegajosa:** cambiar modelo o dimensión = reindexar todo. Cada chunk guarda `embedding_model` y `dimensions`. |
 | Observabilidad | Sentry (`@sentry/tanstackstart-react` + `@sentry/node` en worker) + logs JSON con `correlation_id` `[D-7]` | OpenTelemetry queda post-piloto. Cada mensaje, run de IA y webhook lleva el mismo `correlation_id`. |
 
 **No uses:** D1 como source of truth, Workers como host principal, Next, Supabase como core, monorepo hexagonal día uno, builder de flujos, Instagram, confianza numérica autoreportada por el LLM como criterio de handoff.
@@ -140,9 +142,9 @@ Listo cuando: "¿cuánto cuesta el delivery?" usa la FAQ y la cita; "quiero habl
 Kapso sobre el mismo `ChannelAdapter`. Primera implementación, no reutilización.
 
 - Verificar firma del webhook; idempotencia por `X-Idempotency-Key` / id del evento
-- 200 inmediato, procesar en worker
+- ACK rápido tras persistir en `inbound_events`; procesar en worker. Si Postgres falla, devolver error reintentable
 - Enviar con clave de idempotencia; estados sent/delivered/failed
-- Ventana de 24h: `conversations.last_inbound_at`; si supera 24h, el composer bloquea el envío libre y muestra "fuera de ventana, espera a que el cliente escriba". Plantillas aprobadas quedan para después del piloto `[D-8]`
+- Ventana de 24h: `conversations.last_customer_message_at`; si supera 24h, el composer bloquea el envío libre y muestra "fuera de ventana, espera a que el cliente escriba". Plantillas aprobadas quedan para después del piloto `[D-8]`
 - Un número por workspace; el setup lo hace el founder (setup link de Kapso). Zona horaria del workspace obligatoria en la creación `[D-10]`
 
 Listo cuando: un celular real entra al Inbox, el agente IA responde o deriva, un humano toma el hilo y la IA se calla.
@@ -187,9 +189,9 @@ Cada fase termina en algo que se enseña en una llamada:
 - Idempotencia en entrada y en salida.
 - Sin `apps/` + `packages/` hasta que exista un segundo consumidor real del código.
 
-## Decisiones cerradas por criterio técnico (reversibles antes del primer commit)
+## Defaults técnicos y propuestas de proveedor
 
-Se cierran aquí para no bloquear el scaffold. Si alguna no te convence, cámbiala ahora; después del primer commit tienen costo.
+D-3, D-4, D-5, D-7, D-8 y D-9 son defaults técnicos del plan. D-1 y D-2 siguen como propuestas pendientes según el ADR 0002. Esta revisión no cambia su estado. Los precios y capacidades citados proceden del plan del 6 de septiembre de 2026 y requieren verificación antes de contratar o implementar.
 
 | Id | Decisión | Por qué este default |
 |---|---|---|
@@ -216,4 +218,4 @@ Empieza con: tenant + contacto + mensaje interno + Inbox vivo + un agente con FA
 |---|---|---|---|
 | D-6 | Kapso vs WhatsApp Cloud API directo | ¿Tienes cuenta Kapso activa? ¿Pricing por número y por mensaje en tu país es viable para cobrar al piloto? ¿Los setup links permiten que el cliente conecte su propio número? Si alguna es "no", el adapter alternativo es Cloud API directo con Business Manager propio. | Fase 4. No bloquea fases 1–3. |
 | D-10 | País, ciudad y zona horaria del piloto | Un país y una zona horaria. Define el número de WhatsApp, el horario por defecto de handoff, la moneda en ejemplos del simulador y el idioma/tono de los prompts base. | Fase 3 (horarios, ejemplos) y Fase 4. |
-| D-1/D-2 (veto) | Confirmar OpenAI como vendor de IA | Solo si prefieres otro de los del maestro (Anthropic, Gemini, Bedrock) por cuenta existente, privacidad o costo. Si no dices nada, se implementa OpenAI. El veto debe llegar antes de la fase 3; después, cambiar embeddings implica reindexar. | Fase 3. |
+| D-1/D-2 (veto) | Confirmar OpenAI como vendor de IA | Solo si prefieres otro de los del maestro (Anthropic, Gemini, Bedrock) por cuenta existente, privacidad o costo. OpenAI sigue como default propuesto; esta revisión documental no confirma cuenta, billing ni aceptación. La confirmación o el veto debe llegar antes de la migración 0003; después, cambiar embeddings implica reindexar. | Fase 3. |
