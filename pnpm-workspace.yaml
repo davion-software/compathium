@@ -1,0 +1,5 @@
+# Settings only: Compathium is a single package (no apps/ or packages/).
+# Align transitive vite/vitest with the toolchain bundled in vite-plus (see node_modules/vite-plus/docs/guide/local-cli.md).
+overrides:
+  vite@*: npm:@voidzero-dev/vite-plus-core@1.4.0
+  vitest@*: 5.0.5
