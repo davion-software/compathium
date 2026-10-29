@@ -1,6 +1,6 @@
 # ADR 0002 — Proveedores de chat y embeddings
 
-Fecha: 6 de septiembre de 2026. Estado: **propuesto por defecto**, pendiente de confirmación o veto del founder antes de la fase 3 (D-1, D-2).
+Fecha: 6 de septiembre de 2026. Estado: **Propuesto** (default D-1 y D-2), pendiente de confirmación o veto del founder antes de la migración 0003. DAV-253 no cambia este estado: congelar los contratos internos no confirma proveedor, cuenta, modelo ni dimensión.
 
 ## Contexto
 
@@ -13,7 +13,7 @@ El maestro (17.1) lista OpenAI / Anthropic / Gemini / Bedrock como opciones. xAI
 - Gateway propio con `ChatProvider` y `EmbeddingProvider` separados.
 - PostgreSQL (template pgvector de Railway) con extensión `vector` desde la primera migración.
 - Cada chunk conserva `embedding_model` y `dimensions`; cambiar modelo requiere reindexación completa con pausa de IA.
-- Handoff por intención, evidencia y horario; sin confianza numérica autoreportada.
+- Handoff por intención, evidencia y horario; sin confianza numérica autoreportada. El contrato interno `AiRun` (`src/contracts`) no tiene campo `confidence` y no depende del proveedor elegido aquí.
 
 ## Decisión propuesta (default)
 

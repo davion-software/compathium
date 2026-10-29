@@ -2,7 +2,7 @@
 
 ## Propósito y estado
 
-Compathium es un Inbox para negocios con respuestas de IA basadas en conocimiento publicado y derivación a atención humana. El repositorio contiene solo documentación. No presupongas que existen servicios desplegados, código, dependencias, migraciones o integraciones verificadas.
+Compathium es un Inbox para negocios con respuestas de IA basadas en conocimiento publicado y derivación a atención humana. El repositorio contiene la documentación y un paquete mínimo (tooling y contratos zod en `src/contracts`, DAV-253). No presupongas que existen servicios desplegados, aplicación, migraciones o integraciones verificadas.
 
 ## Stack objetivo
 
@@ -51,7 +51,7 @@ Las decisiones cerradas del plan y los ADRs aceptados orientan el diseño. El do
 
 ## Comandos
 
-Comandos disponibles desde la raíz, sin instalar dependencias:
+Comandos documentales desde la raíz, sin instalar dependencias:
 
 ```bash
 git status --short
@@ -61,4 +61,4 @@ git diff --check
 
 Comprueba que todos los destinos de enlaces relativos existen y que las referencias a secciones apuntan a encabezados vigentes. No hay un validador de enlaces versionado. Al renombrar, busca también las rutas antiguas con `rg`.
 
-`dev:web`, `dev:worker`, `build`, `start:web` y `start:worker` son scripts previstos, no ejecutables actuales. No inventes comandos de instalación o test antes de crear y revisar el scaffold.
+Con dependencias instaladas (`pnpm install`, Node 24): `pnpm lint`, `pnpm format:check` (y `pnpm format`), `pnpm typecheck` y `pnpm test`. `dev:web`, `dev:worker`, `build`, `start:web` y `start:worker` son scripts previstos, no ejecutables actuales. No inventes comandos antes de crear y revisar el scaffold.

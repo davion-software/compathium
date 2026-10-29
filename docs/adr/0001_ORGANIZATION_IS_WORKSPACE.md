@@ -1,6 +1,6 @@
 # ADR 0001 — Organization de Better Auth representa un workspace
 
-Fecha: 6 de septiembre de 2026. Estado: aceptado por decisión cerrada del plan del MVP.
+Fecha: 6 de septiembre de 2026. Estado: **Aceptado**. Es una decisión cerrada del plan del MVP v1.2; el estado se marca explícitamente en DAV-253 (29 de octubre de 2026). La implementación sigue pendiente.
 
 ## Contexto
 

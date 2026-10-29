@@ -6,7 +6,7 @@ El MVP contempla webchat primero y WhatsApp después, un agente de IA por worksp
 
 ## Estado
 
-Al 28 de octubre de 2026, este repositorio contiene solo documentación. No hay aplicación, dependencias, migraciones ni pruebas ejecutables. Los recorridos descritos son criterios de aceptación pendientes, no funciones disponibles.
+Al 29 de octubre de 2026, el repositorio contiene la documentación y, desde DAV-253, un paquete mínimo con tooling (Node 24, pnpm, Vite+, oxlint, oxfmt, Vitest, TypeScript estricto) y los contratos internos zod de `src/contracts`. No hay aplicación, migraciones ni servicios. Los recorridos descritos son criterios de aceptación pendientes, no funciones disponibles.
 
 El stack objetivo es TanStack Start, React 19 y TypeScript, con Better Auth, PostgreSQL con pgvector y Drizzle. Railway alojará dos procesos, `web` y `worker`; Redis con BullMQ ejecutará trabajos y R2 almacenará archivos. OpenAI es el proveedor de IA propuesto y Kapso sigue pendiente de confirmación.
 
@@ -26,4 +26,4 @@ El plan cita un documento maestro que no está disponible en el repositorio. Las
 
 ## Comprobar cambios documentales
 
-Ejecuta `git diff --check` antes de crear un commit. No hay comandos de desarrollo, build o test implementados. Los nombres de scripts del plan son objetivos para el futuro scaffold.
+Ejecuta `git diff --check` antes de crear un commit. Con código: `pnpm install`, `pnpm lint`, `pnpm format:check`, `pnpm typecheck` y `pnpm test`. `dev:web`, `dev:worker`, `build`, `start:web` y `start:worker` siguen siendo objetivos del futuro scaffold.
